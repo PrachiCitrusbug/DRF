@@ -1,8 +1,9 @@
 import uuid
 from dataclasses import dataclass
 from dataclass_type_validator import dataclass_validate
+from typing import Optional
 
-from django.contrib import admin
+# from django.contrib import admin
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
@@ -24,8 +25,13 @@ class BaseUserParams:
 @dataclass_validate
 @dataclass(frozen=True)
 class BaseUserPermissions:
-    is_staff: bool
-    is_active: bool
+    is_staff: Optional[bool] = False
+    is_active: Optional[bool] = True
+
+# @dataclass_validate
+# @dataclass(frozen=True)
+# class SuperUserPermission:
+#     is_superuser: Optional[bool] = False
 
 class UserManagerAutoID(UserManager):
     """ User manager to create staff and superuser with auto generated id """
@@ -63,18 +69,19 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ["username"]
 
     objects = UserManagerAutoID()
-    def update_entity(self, base_params: BaseUserParams, role:custom_models.RoleType, base_permissions:BaseUserPermissions):
+    def update_entity(self, base_params: BaseUserParams, role:custom_models.RoleType):
         self.username = base_params.username if base_params.username else self.username
         self.email = base_params.email if base_params.email else self.email
         self.role = role if role else self.role
-        self.is_staff = base_permissions.is_staff
-        self.is_active = base_permissions.is_active
+        # self.is_staff = base_permissions.is_staff
+        # self.is_active = base_permissions.is_active
+        # self.is_superuser = is_superuser
         self.save()
         return self
 
-    @admin.display(description="role and is_staff?")
-    def role_staff(self):
-        return f"{self.role.lower()} {self.is_staff}"
+    # @admin.display(description="role and is_staff?")
+    # def role_staff(self):
+    #     return f"{self.role.lower()} {self.is_staff}"
 
 class UserFactory:
     """Factory class to create User"""

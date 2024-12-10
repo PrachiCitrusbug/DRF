@@ -25,9 +25,9 @@ class UserListViewSerializer(serializers.ModelSerializer):
 
 class UserCreateViewSerializer(serializers.ModelSerializer):
     user_app_service = UserAppService()
+    # abcd = serializers.SerializerMethodField()
 
     password = serializers.CharField(required=True)
-
     class Meta:
         model = get_user_model()
         fields = ["username", "email", "password", "role"]
@@ -39,7 +39,7 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
                 return value
             except ValidationError as error:
                 raise serializers.ValidationError(error)
-    
+            
     def validate_role(self, value):
         if value == RoleType.PATIENT or value == RoleType.DOCTOR:
             return value
@@ -47,17 +47,14 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
             return RoleType.PATIENT
 
     def create(self, validated_data):
-        # username = self.validated_data.get("username")
-        # email = self.validated_data.get("email")
-        # password = self.validated_data.get("password")
-        # user_obj = {"username": username, "email":email, "password":password}
-        print(validated_data)
         role = validated_data.get("role")
-        if role == RoleType.PATIENT:
-            instance = self.user_app_service.create_patient_user(validated_data)
-        else:
+        if role == RoleType.DOCTOR:
             instance = self.user_app_service.create_doctor_user(validated_data)
-        return instance 
+        else:
+            instance = self.user_app_service.create_patient_user(validated_data)
+        return instance
     
-    def update(self, instance, validated_data):
-        pass
+class UserUpdateViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = []
