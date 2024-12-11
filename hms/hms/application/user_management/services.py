@@ -125,8 +125,8 @@ class UserAppService:
             return self.user_service.get_user_by_id_list(id_list)
         except User.DoesNotExist:
             return None
-        
-    def get_active_user_by_id(self, id:uuid.UUID) -> Optional[User]:
+
+    def get_active_user_by_id(self, id: uuid.UUID) -> Optional[User]:
         """
         get active `User` object by id
 
@@ -141,53 +141,54 @@ class UserAppService:
         except User.DoesNotExist:
             return None
 
-    def create_patient_user(self, user_obj: dict) -> QuerySet[User]:
+    def create_user(self, user_obj: dict) -> User:
         """
-        create patient user in the database
+        create user based on role
 
         Args:
             user_obj: dict with user model attributes as keys
 
         Returns:
-            QuerySet[User]: created patient user object
+            User: created user object
         """
-        # try:
-        # base_params = BaseUserParams(username=user_obj.username, email=user_obj.email)
-        # user = self.user_service.create_user(base_params, custom_models.RoleType.PATIENT)
-        # user.set_password(user_obj.password)
-        base_params = {
-            "username": user_obj.get("username"),
-            "email": user_obj.get("email"),
-        }
-        user = self.user_service.create_user(
-            base_params, custom_models.RoleType.PATIENT
-        )
-        user.set_password(user_obj.get("password"))
-        user.save()
-        return user
-        # except Exception as e:
-        #     raise Exception
+        try:
+            # base_params = BaseUserParams(username=user_obj.username, email=user_obj.email)
+            # user = self.user_service.create_user(base_params, custom_models.RoleType.PATIENT)
+            # user.set_password(user_obj.password)
+            base_params = {
+                "username": user_obj.get("username"),
+                "email": user_obj.get("email"),
+            }
+            role = user_obj.get("role")
+            if role == custom_models.RoleType.PATIENT or role == custom_models.RoleType.DOCTOR:
+                user = self.user_service.create_user(
+                    base_params=base_params, role=role
+                )
+            elif role == custom_models.RoleType.STAFF:
+                user = self.user_service.create_user(
+                    base_params=base_params,
+                    role=custom_models.RoleType.STAFF,
+                    base_permissions={"is_staff": True},
+                )
+            elif role == custom_models.RoleType.SUPERUSER:
+                user = self.user_service.create_user(
+                    base_params=base_params,
+                    role=custom_models.RoleType.SUPERUSER,
+                    base_permissions={"is_staff": True},
+                    is_superuser={"is_superuser": True}
+                )
+            else:
+                raise ValueError("Accepted role values are: patient, doctor, staff, superuser")
+            user.set_password(user_obj.get("password"))
+            user.save()
+            return user
+        except Exception as e:
+            raise Exception(f"At create_user: {e}. user_obj dict must contain username, email, password and role key values.")
 
-    def create_doctor_user(self, user_obj: dict) -> User:
+
+    def update_user(self, user_obj: User) -> QuerySet[User]:
         """
-        create doctor user in the database
-
-        Args:
-            user_obj: dict with user model attributes as keys
-
-        Returns:
-            User: created doctor user object
-
-        """
-        base_params = {"username": user_obj["username"], "email": user_obj["email"]}
-        user = self.user_service.create_user(base_params, custom_models.RoleType.DOCTOR)
-        user.set_password(user_obj["password"])
-        user.save()
-        return user
-
-    def update_user(self, user_obj) -> QuerySet[User]:
-        """
-        update user
+        update user based on role
 
         Args:
             user_obj: instance of user form
@@ -196,11 +197,32 @@ class UserAppService:
             User: updated user instance
 
         """
-        user_id = user_obj.id
-        base_params = {"username": user_obj.username, "email": user_obj.email}
-        role = user_obj.role
-        return self.user_service.update_user(
-            user_id,
-            base_params=base_params,
-            role=role,
-        )
+        try:
+            user_id = user_obj.id
+            base_params = {"username": user_obj.username, "email": user_obj.email}
+            role = user_obj.role
+            if role == custom_models.RoleType.PATIENT or role == custom_models.RoleType.DOCTOR:
+                return self.user_service.update_user(
+                    user_id=user_id,
+                    base_params=base_params,
+                    role=role
+                )
+            elif role == custom_models.RoleType.STAFF:
+                return self.user_service.update_user(
+                    user_id=user_id,
+                    base_params=base_params,
+                    role=custom_models.RoleType.STAFF,
+                    base_permissions={"is_staff": True},
+                )
+            elif role == custom_models.RoleType.SUPERUSER:
+                return self.user_service.update_user(
+                    user_id=user_id,
+                    base_params=base_params,
+                    role=custom_models.RoleType.SUPERUSER,
+                    base_permissions={"is_staff": True},
+                    is_superuser={"is_superuser": True}
+                )
+            else:
+                raise ValueError("Accepted role values are: patient, doctor, staff, superuser")  
+        except Exception as e:
+            raise Exception(f"At update_user: {e}. user_obj is an instance of User object with updated values.")
