@@ -48,7 +48,6 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"password":"This field is required"})
     
     def validate(self, attr):
-        print(attr)
         value = None
         if attr.get("password"):
             value = attr.get("password")
@@ -64,9 +63,9 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         try:
-            instance.username = validated_data.get("username")
-            instance.email = validated_data.get("email")
-            instance.role = validated_data.get("role")
+            instance.username = validated_data.get("username") if validated_data.get("username") else instance.username
+            instance.email = validated_data.get("email") if validated_data.get("email") else instance.email
+            instance.role = validated_data.get("role") if validated_data.get("role") else instance.role
             instance = self.user_app_service.update_user(instance)
             return instance
         except Exception as e:

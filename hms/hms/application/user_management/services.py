@@ -50,7 +50,7 @@ class UserAppService:
             QuerySet[User] | None: The `User` list in the database or none if it DoesNotExist
         """
         try:
-            return self.user_service.get_all_users()
+            return self.user_service.get_all_users().order_by("date_joined")
         except User.DoesNotExist:
             return None
 

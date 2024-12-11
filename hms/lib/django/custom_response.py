@@ -36,6 +36,7 @@ class CustomResponse:
         return Response(self.data)
 
     def error_message(self):
+        # print(settings.DEBUG)
         self.status = self.status if self.status else HTTP_400_BAD_REQUEST
         self.data = {
             "message": self.message if self.message else "Something went wrong!",

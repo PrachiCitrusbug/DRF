@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status, filters
 
 # from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
+# from rest_framework.pagination import PageNumberPagination
 
 from hms.application.user_management.services import UserAppService
 from hms.interfaces.user_management.serializers import (
@@ -23,19 +23,20 @@ class UserViewSet(viewsets.GenericViewSet):
         """get serializer based on action performed"""
         if self.action == "list" or self.action == "retrieve":
             return UserListViewSerializer
-        elif self.action == "create" or self.action == "update":
+        elif (
+            self.action == "create"
+            or self.action == "update"
+            or self.action == "partial_update"
+        ):
             return UserCreateViewSerializer
-
-    def get_queryset(self):
-        """set queryset"""
-        return self.queryset
 
     def list(self, request):
         """list of users in the dataset, paginated response list and filtered response"""
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(self.queryset, request)
         serializer = self.get_serializer_class()
         try:
-            serializer = serializer(self.queryset, many=True)
-            # print(self.paginator.__dict__)
+            serializer = serializer(paginated_queryset, many=True)
             return CustomResponse(
                 message="list data", data=serializer.data
             ).success_message()
@@ -78,12 +79,15 @@ class UserViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return CustomResponse(message=e).error_message()
 
-    def update(self, request, pk=None):
+    def update(self, request, pk=None, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
         serializer = self.get_serializer_class()
         try:
             instance = self.user_app_service.get_user_by_id(pk)
             if instance:
-                serializer_obj = serializer(instance=instance, data=request.data)
+                serializer_obj = serializer(
+                    instance=instance, data=request.data, partial=partial
+                )
                 if serializer_obj.is_valid():
                     serializer_obj.save()
                     return CustomResponse(
@@ -98,8 +102,9 @@ class UserViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return CustomResponse(message=e).error_message()
 
-    def partial_update(self, request, pk=None):
-        pass
+    def partial_update(self, request, pk=None, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, pk, *args, **kwargs)
 
     def destroy(self, request, pk=None):
         """delete user, sets is_active as False"""

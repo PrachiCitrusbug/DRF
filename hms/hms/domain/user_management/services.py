@@ -47,7 +47,7 @@ class UserService:
         Returns:
             QuerySet[User]: The `User` list in the database
         """
-        return self.get_user_repo()
+        return self.get_user_repo().all()
 
     def get_user_by_email(self, email: str) -> QuerySet[User]:
         """
