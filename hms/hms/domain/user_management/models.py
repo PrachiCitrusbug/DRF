@@ -9,18 +9,22 @@ from django.db import models
 
 from lib.django import custom_models
 
+
 @dataclass(frozen=True)
 class UserID:
     """
     This is a value object that should be used to generate and pass the UserID to the UserFactory
     """
+
     value: uuid.UUID
+
 
 @dataclass_validate
 @dataclass(frozen=True)
 class BaseUserParams:
-    username:str
-    email:str
+    username: str
+    email: str
+
 
 @dataclass_validate
 @dataclass(frozen=True)
@@ -28,13 +32,16 @@ class BaseUserPermissions:
     is_staff: Optional[bool] = False
     is_active: Optional[bool] = True
 
-# @dataclass_validate
-# @dataclass(frozen=True)
-# class SuperUserPermission:
-#     is_superuser: Optional[bool] = False
+
+@dataclass_validate
+@dataclass(frozen=True)
+class SuperUserPermission:
+    is_superuser: Optional[bool] = False
+
 
 class UserManagerAutoID(UserManager):
-    """ User manager to create staff and superuser with auto generated id """
+    """User manager to create staff and superuser with auto generated id"""
+
     def create_staff(self, username, email, password, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", False)
@@ -48,7 +55,7 @@ class UserManagerAutoID(UserManager):
         if id not in extra_fields:
             extra_fields["id"] = UserID(uuid.uuid4()).value
         return self._create_user(username, email, password, **extra_fields)
-    
+
     def create_superuser(self, username, email, password, **extra_fields):
         extra_fields.setdefault("role", custom_models.RoleType.SUPERUSER)
         if id not in extra_fields:
@@ -56,26 +63,31 @@ class UserManagerAutoID(UserManager):
         if extra_fields.get("role") != custom_models.RoleType.SUPERUSER:
             raise ValueError("Superuser must have role=superuser.")
         return super().create_superuser(username, email, password, **extra_fields)
-    
+
 
 class User(AbstractUser):
-    """ Represents a User """
+    """Represents a User"""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(
-        verbose_name="email address", max_length=255, unique=True)
-    role = models.CharField(choices=custom_models.RoleType.choices, max_length=10, default=custom_models.RoleType.PATIENT)
+    email = models.EmailField(verbose_name="email address", max_length=255, unique=True)
+    role = models.CharField(
+        choices=custom_models.RoleType.choices,
+        max_length=10,
+        default=custom_models.RoleType.PATIENT,
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 
     objects = UserManagerAutoID()
-    def update_entity(self, base_params: BaseUserParams, role:custom_models.RoleType):
+
+    def update_entity(self, base_params:BaseUserParams, role:custom_models.RoleType, base_permissions:BaseUserPermissions, is_superuser:SuperUserPermission):
         self.username = base_params.username if base_params.username else self.username
         self.email = base_params.email if base_params.email else self.email
         self.role = role if role else self.role
-        # self.is_staff = base_permissions.is_staff
-        # self.is_active = base_permissions.is_active
-        # self.is_superuser = is_superuser
+        self.is_staff = base_permissions.is_staff
+        self.is_active = base_permissions.is_active
+        self.is_superuser = is_superuser
         self.save()
         return self
 
@@ -83,14 +95,22 @@ class User(AbstractUser):
     # def role_staff(self):
     #     return f"{self.role.lower()} {self.is_staff}"
 
+
 class UserFactory:
     """Factory class to create User"""
 
     @staticmethod
-    def build_entity_with_id(base_params: BaseUserParams, role:custom_models.RoleType=custom_models.RoleType.PATIENT):
+    def build_entity_with_id(
+        base_params: BaseUserParams,
+        role: custom_models.RoleType,
+        base_permissions: BaseUserPermissions,
+        is_superuser: SuperUserPermission,
+    ):
         user_id = UserID(uuid.uuid4())
         return User(
             id=user_id.value,
             **BaseUserParams(**base_params).__dict__,
-            role=role
+            role=role,
+            **BaseUserPermissions(**base_permissions).__dict__,
+            **SuperUserPermission(**is_superuser).__dict__,
         )

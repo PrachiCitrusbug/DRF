@@ -9,6 +9,8 @@ from .models import (
     User,
     UserFactory,
     BaseUserParams,
+    BaseUserPermissions,
+    SuperUserPermission,
 )
 from lib.django.custom_models import RoleType
 
@@ -45,7 +47,7 @@ class UserService:
         Returns:
             QuerySet[User]: The `User` list in the database
         """
-        return self.get_user_repo()
+        return self.get_user_repo().all()
 
     def get_user_by_email(self, email: str) -> QuerySet[User]:
         """
@@ -82,8 +84,8 @@ class UserService:
             QuerySet[User]: The `User` object in the database
         """
         return self.get_user_repo().filter(id__in=id_list)
-    
-    def get_active_user_by_id(self, id:uuid.UUID) -> User:
+
+    def get_active_user_by_id(self, id: uuid.UUID) -> User:
         """
         returns active `User` object for given `id`
         Args:
@@ -93,21 +95,43 @@ class UserService:
         """
         return self.get_user_repo().get(id=id, is_active=True)
 
-    def create_user(self, base_params, role=RoleType.PATIENT):
-        """creates `User` object with given `base_params`"""
-        return self.get_user_factory().build_entity_with_id(base_params, role)
+    def create_user(
+        self,
+        base_params,
+        role=RoleType.PATIENT,
+        base_permissions={
+            "is_staff": BaseUserPermissions.is_staff,
+            "is_active": BaseUserPermissions.is_active,
+        },
+        is_superuser={"is_superuser": SuperUserPermission.is_superuser},
+    ):
+        """creates `User` object"""
+        return self.get_user_factory().build_entity_with_id(
+            base_params=base_params,
+            role=role,
+            base_permissions=base_permissions,
+            is_superuser=is_superuser,
+        )
 
     def update_user(
         self,
         user_id,
         base_params,
         role=RoleType.PATIENT,
+        base_permissions={
+            "is_staff": BaseUserPermissions.is_staff,
+            "is_active": BaseUserPermissions.is_active,
+        },
+        is_superuser={"is_superuser": SuperUserPermission.is_superuser},
     ):
+        """updates `User` object"""
         return (
             self.get_user_repo()
             .get(id=user_id)
             .update_entity(
                 base_params=BaseUserParams(**base_params),
-                role=role
+                role=role,
+                base_permissions=BaseUserPermissions(**base_permissions),
+                is_superuser=SuperUserPermission(**is_superuser).is_superuser
             )
         )
