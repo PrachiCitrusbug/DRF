@@ -3,14 +3,15 @@ from http.client import responses
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
-import hms.settings as settings
+from django.conf import settings
+
 
 class CustomResponse:
     """customized data response"""
 
     def __init__(
         self,
-        message = None,
+        message=None,
         data=None,
         status=None,
     ):
@@ -33,7 +34,7 @@ class CustomResponse:
             "data": self.data if self.data else "{}",
             "status": self.status_text,
         }
-        return Response(self.data)
+        return Response(self.data, status=self.status)
 
     def error_message(self):
         # print(settings.DEBUG)
@@ -43,4 +44,4 @@ class CustomResponse:
             "data": self.data if self.data else "{}",
             "status": self.status_text,
         }
-        return Response(self.data)
+        return Response(self.data, status=self.status)
