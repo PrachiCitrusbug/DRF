@@ -16,7 +16,9 @@ class SerializerException(APIException):
     """
     Exception class to raise serializer
     """
-    pass
+    status_code = 500
+    default_detail = 'A server error occurred. We are looking into it!'
+    default_code = 'error'
 
 
 # @dataclass(frozen=True)

@@ -1,7 +1,6 @@
 from rest_framework import viewsets, status, filters
 
 # from rest_framework.decorators import action
-# from rest_framework.pagination import PageNumberPagination
 
 from hms.application.user_management.services import UserAppService
 from hms.interfaces.user_management.serializers import (
@@ -30,10 +29,18 @@ class UserViewSet(viewsets.GenericViewSet):
         ):
             return UserCreateViewSerializer
 
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
         """list of users in the dataset, paginated response list and filtered response"""
+        # search = request.query_params('search')
+        filter_backends = [filters.SearchFilter]
+        search_fields = ['username', 'email']
+        for backend in filter_backends:
+            self.queryset = backend().filter_queryset(request=request, queryset=self.queryset, view=self)
+            
         paginator = self.pagination_class()
         paginated_queryset = paginator.paginate_queryset(self.queryset, request)
+
+
         serializer = self.get_serializer_class()
         try:
             serializer = serializer(paginated_queryset, many=True)
