@@ -63,9 +63,11 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         try:
-            instance.username = validated_data.get("username") if validated_data.get("username") else instance.username
-            instance.email = validated_data.get("email") if validated_data.get("email") else instance.email
-            instance.role = validated_data.get("role") if validated_data.get("role") else instance.role
+            # TODO : Try this
+            # instance.username = validated_data.get("username") if validated_data.get("username") else instance.username
+            # instance.email = validated_data.get("email") if validated_data.get("email") else instance.email
+            # instance.role = validated_data.get("role") if validated_data.get("role") else instance.role
+            instance.__dict__.update(**validated_data)
             instance = self.user_app_service.update_user(instance)
             return instance
         except Exception as e:

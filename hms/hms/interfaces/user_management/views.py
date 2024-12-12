@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status, filters
+from rest_framework.permissions import IsAuthenticated
 
 # from rest_framework.decorators import action
 
@@ -13,6 +14,7 @@ from lib.django.custom_response import CustomResponse
 class UserViewSet(viewsets.GenericViewSet):
     """viewset to list, create, update, delete and retrieve users"""
 
+    permission_classes = [IsAuthenticated]
     user_app_service = UserAppService()
     filter_backends = [filters.SearchFilter]
     search_fields = ["username", "email"]
@@ -33,13 +35,14 @@ class UserViewSet(viewsets.GenericViewSet):
         """list of users in the dataset, paginated response list and filtered response"""
         # search = request.query_params('search')
         filter_backends = [filters.SearchFilter]
-        search_fields = ['username', 'email']
+        search_fields = ["username", "email"]
         for backend in filter_backends:
-            self.queryset = backend().filter_queryset(request=request, queryset=self.queryset, view=self)
-            
+            self.queryset = backend().filter_queryset(
+                request=request, queryset=self.queryset, view=self
+            )
+
         paginator = self.pagination_class()
         paginated_queryset = paginator.paginate_queryset(self.queryset, request)
-
 
         serializer = self.get_serializer_class()
         try:
@@ -110,7 +113,7 @@ class UserViewSet(viewsets.GenericViewSet):
             return CustomResponse(message=e).error_message()
 
     def partial_update(self, request, pk=None, *args, **kwargs):
-        kwargs['partial'] = True
+        kwargs["partial"] = True
         return self.update(request, pk, *args, **kwargs)
 
     def destroy(self, request, pk=None):

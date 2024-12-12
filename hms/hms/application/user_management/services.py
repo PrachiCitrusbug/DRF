@@ -1,7 +1,15 @@
 import uuid
 from typing import List, Optional
+import random
+import datetime 
+
+import pytz
+
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.db.models.query import QuerySet
+from django.conf import settings
+from django.urls import reverse
 
 from lib.django import custom_models
 from hms.domain.user_management.models import User
@@ -178,7 +186,10 @@ class UserAppService:
                     is_superuser={"is_superuser": True}
                 )
             else:
-                raise ValueError("Accepted role values are: patient, doctor, staff, superuser")
+                user = self.user_service.create_user(
+                    base_params=base_params,
+                    role=custom_models.RoleType.PATIENT,
+                )
             user.set_password(user_obj.get("password"))
             user.save()
             return user
@@ -201,6 +212,7 @@ class UserAppService:
             user_id = user_obj.id
             base_params = {"username": user_obj.username, "email": user_obj.email}
             role = user_obj.role
+            # TODO : Update this code to call update_user only one time.
             if role == custom_models.RoleType.PATIENT or role == custom_models.RoleType.DOCTOR:
                 return self.user_service.update_user(
                     user_id=user_id,
@@ -226,3 +238,47 @@ class UserAppService:
                 raise ValueError("Accepted role values are: patient, doctor, staff, superuser")  
         except Exception as e:
             raise Exception(f"At update_user: {e}. user_obj is an instance of User object with updated values.")
+    
+    def get_user_token(self, user:User) -> dict:
+        """
+        generate access and refresh token for the user 
+
+        Args:
+            user: authenticated user
+
+        Returns:
+            dict: containing information about user and token
+        """
+        try:
+            token = RefreshToken.for_user(user)
+            token["email"] = user.email
+            data = {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "access token": str(token.access_token),
+                "refresh token": str(token),
+            }
+            return data
+        except Exception as e:
+            raise Exception(f"At get_user_token: {e}")
+    
+    
+    def forgot_password(self, user:User) -> dict:
+        otp = generate_otp()
+        utc_timezone = pytz.timezone(settings.TIME_ZONE)
+        otp_expiration = datetime.datetime.now() + datetime.timedelta(minutes=settings.OTP_EXPIRATION)
+        user.otp = otp
+        user.otp_expiration = utc_timezone.localize(otp_expiration)
+        response_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'otp': user.otp,
+            'verify': reverse('pwd-verify-otp'),
+        }
+        return response_data
+
+
+def generate_otp():
+    return random.randrange(1000, 9999)

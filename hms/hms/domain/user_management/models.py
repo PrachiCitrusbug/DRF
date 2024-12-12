@@ -2,10 +2,14 @@ import uuid
 from dataclasses import dataclass
 from dataclass_type_validator import dataclass_validate
 from typing import Optional
+from datetime import datetime
+
+import pytz
 
 # from django.contrib import admin
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
+from django.conf import settings
 
 from lib.django import custom_models
 
@@ -75,6 +79,8 @@ class User(AbstractUser):
         max_length=10,
         default=custom_models.RoleType.PATIENT,
     )
+    otp = models.IntegerField(null=True, blank=True)
+    otp_expiration = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -90,7 +96,13 @@ class User(AbstractUser):
         self.is_superuser = is_superuser
         self.save()
         return self
-
+    
+    def is_otp_expired(self):
+        utc_timezone = pytz.timezone(settings.TIME_ZONE)
+        expiration_time = self.otp_expiration
+        now = utc_timezone.localize(datetime.now())
+        return expiration_time < now
+    
     # @admin.display(description="role and is_staff?")
     # def role_staff(self):
     #     return f"{self.role.lower()} {self.is_staff}"
