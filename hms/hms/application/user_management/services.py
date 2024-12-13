@@ -1,18 +1,13 @@
 import uuid
 from typing import List, Optional
-import random
-import datetime 
-
-import pytz
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.db.models.query import QuerySet
-from django.conf import settings
 from django.urls import reverse
 
 from lib.django import custom_models
-from hms.domain.user_management.models import User
+from hms.domain.user_management.models import User, UserOTP
 from hms.domain.user_management.services import UserService
 
 
@@ -265,20 +260,46 @@ class UserAppService:
     
     
     def forgot_password(self, user:User) -> dict:
-        otp = generate_otp()
-        utc_timezone = pytz.timezone(settings.TIME_ZONE)
-        otp_expiration = datetime.datetime.now() + datetime.timedelta(minutes=settings.OTP_EXPIRATION)
-        user.otp = otp
-        user.otp_expiration = utc_timezone.localize(otp_expiration)
-        response_data = {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'otp': user.otp,
-            'verify': reverse('pwd-verify-otp'),
-        }
-        return response_data
-
-
-def generate_otp():
-    return random.randrange(1000, 9999)
+        try:
+            #get otp -> delete if exists
+            otp_obj = self.user_service.get_otp_by_user_id(user_id=user.id)
+            if otp_obj:
+                otp_obj.delete()
+            otp = self.user_service.create_otp(user=user)
+            otp.save()
+            response_data = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'otp': otp.otp,
+                'verify': reverse('pwd-verify-otp', kwargs={'pk': user.id}),
+            }
+            return response_data
+        except Exception as e:
+            raise Exception(f"At forgot_password: {e}")
+    
+    def verify_otp(self, otp:int, user_id:uuid.UUID) -> UserOTP:
+        try:
+            otp_obj = self.user_service.get_otp_by_user_id(user_id=user_id)
+            if otp_obj.otp == otp:
+                return otp_obj
+        except Exception as e:
+            raise Exception(f"At verify_otp: {e}")
+    
+    def set_new_password(self, user_id: uuid.UUID, new_password:str) -> bool:
+        try:
+            user = self.user_service.get_user_by_id(id=user_id)
+            user.set_password(new_password)
+            user.save()
+            return True
+        except Exception as e:
+            raise Exception(f"At set_new_password: {e}")
+        
+    def reset_password(self, otp_token, user_id:uuid.UUID, new_password) -> bool:
+        try:
+            otp_obj = self.user_service.get_otp_by_user_id(user_id=user_id)
+            if otp_obj.otp_token == otp_token:
+                return self.set_new_password(user_id=user_id, new_password=new_password)
+            return False
+        except Exception as e:
+            raise Exception(f"At reset_password: {e}")

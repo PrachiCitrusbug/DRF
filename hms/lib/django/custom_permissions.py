@@ -1,5 +1,7 @@
 from django.contrib.auth.mixins import UserPassesTestMixin
 
+from rest_framework.permissions import BasePermission
+
 from lib.django.custom_models import RoleType
 
 
@@ -17,3 +19,12 @@ class NotDoctorTestMixin(UserPassesTestMixin):
     """ test mixin class to check requested user's role is not doctor """
     def test_func(self) -> bool | None:
         return self.request.user.is_authenticated and self.request.user.role != RoleType.DOCTOR
+
+class IsNotAuthenticated(BasePermission):
+    """
+    Custom permission to disallow access for authenticated users.
+    """
+    message = 'Authenticated users are not allowed.'
+
+    def has_permission(self, request, view):
+        return not request.user.is_authenticated

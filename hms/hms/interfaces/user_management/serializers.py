@@ -27,7 +27,7 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
     user_app_service = UserAppService()
     # abcd = serializers.SerializerMethodField()
 
-    password = serializers.CharField(required=False)
+    password = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = get_user_model()
@@ -74,9 +74,3 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
             raise SerializerException(
                 f"{e} at update() in UserCreateViewSerializer"
             )
-
-
-class UserUpdateViewSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = get_user_model()
-        fields = []

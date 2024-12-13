@@ -2,22 +2,33 @@ import uuid
 from dataclasses import dataclass
 from dataclass_type_validator import dataclass_validate
 from typing import Optional
-from datetime import datetime
-
-import pytz
+import datetime
+import binascii
+import os
 
 # from django.contrib import admin
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.conf import settings
+from django.utils.timezone import get_default_timezone
 
 from lib.django import custom_models
+from lib.django.utils import generate_otp
 
 
 @dataclass(frozen=True)
 class UserID:
     """
     This is a value object that should be used to generate and pass the UserID to the UserFactory
+    """
+
+    value: uuid.UUID
+
+    
+@dataclass(frozen=True)
+class OtpID:
+    """
+    This is a value object that should be used to generate and pass the OtpID to the OtpFactory
     """
 
     value: uuid.UUID
@@ -41,6 +52,8 @@ class BaseUserPermissions:
 @dataclass(frozen=True)
 class SuperUserPermission:
     is_superuser: Optional[bool] = False
+
+
 
 
 class UserManagerAutoID(UserManager):
@@ -79,8 +92,6 @@ class User(AbstractUser):
         max_length=10,
         default=custom_models.RoleType.PATIENT,
     )
-    otp = models.IntegerField(null=True, blank=True)
-    otp_expiration = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -97,15 +108,20 @@ class User(AbstractUser):
         self.save()
         return self
     
-    def is_otp_expired(self):
-        utc_timezone = pytz.timezone(settings.TIME_ZONE)
-        expiration_time = self.otp_expiration
-        now = utc_timezone.localize(datetime.now())
-        return expiration_time < now
-    
     # @admin.display(description="role and is_staff?")
     # def role_staff(self):
     #     return f"{self.role.lower()} {self.is_staff}"
+
+class UserOTP(models.Model):
+    """Represents otp for user"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    otp = models.IntegerField(null=True, blank=True)
+    otp_expiration = models.DateTimeField(null=True, blank=True)
+    user = models.OneToOneField(null=True, to=User, on_delete=models.CASCADE)
+    otp_token = models.CharField(max_length=40, null=True)
+    
+    def is_otp_expired(self):
+        return self.otp_expiration < datetime.datetime.now()
 
 
 class UserFactory:
@@ -125,4 +141,21 @@ class UserFactory:
             role=role,
             **BaseUserPermissions(**base_permissions).__dict__,
             **SuperUserPermission(**is_superuser).__dict__,
+        )
+
+class UserOTPFactory:
+    """Factory class to create otp"""
+    @staticmethod
+    def build_entity_with_id(user:User):
+        id = OtpID(uuid.uuid4())
+        otp = generate_otp()
+        tz = get_default_timezone()
+        otp_expiration = datetime.datetime.now(tz=tz) + datetime.timedelta(minutes=settings.OTP_EXPIRATION)
+        otp_token = binascii.hexlify(os.urandom(20)).decode()
+        return UserOTP(
+            id=id.value,
+            otp=otp,
+            otp_expiration=otp_expiration,
+            user=user,
+            otp_token=otp_token
         )

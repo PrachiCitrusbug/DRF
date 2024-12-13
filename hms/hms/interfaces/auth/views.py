@@ -1,18 +1,21 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth import logout as auth_logout
+from django.urls import reverse
 
-from rest_framework import viewsets, status, serializers
+
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.views import TokenViewBase
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework.permissions import IsAuthenticated
 
 
-from .serializers import AuthSerializer
+from .serializers import AuthSerializer, PasswordForgetSerializer, OTPSerializer, TokenSerializer, NewPasswordSerializer
 from ..user_management.serializers import UserCreateViewSerializer
 from hms.application.user_management.services import UserAppService
 from lib.django.custom_response import CustomResponse
-from hms.domain.user_management.models import User
+from lib.django.custom_permissions import IsNotAuthenticated
 
 
 class AuthenticateUserView(viewsets.ViewSet):
@@ -41,10 +44,12 @@ class AuthenticateUserView(viewsets.ViewSet):
                 password = serializer.data.get("password", None)
                 user = authenticate(email=email, password=password)
                 # TODO : Add condition to raise error if user not found.
-                response_data = self.user_app_service.get_user_token(user)
-                return CustomResponse(
-                    message="Logged In", data=response_data
-                ).success_message()
+                if user:
+                    response_data = self.user_app_service.get_user_token(user)
+                    return CustomResponse(
+                        message="Logged In", data=response_data
+                    ).success_message()
+                return CustomResponse("Invalid email or password!").success_message()
             return CustomResponse(
                 message="validation error", data=serializer.errors
             ).error_message()
@@ -89,45 +94,97 @@ class PasswordHandlerView(viewsets.ViewSet):
     """viewset to handle forgot and change password view"""
 
     user_app_service = UserAppService()
+    permission_classes = [IsNotAuthenticated]
 
     def get_serializer_class(self):
         if self.action == "forgot_password":
-            return AuthSerializer
+            return PasswordForgetSerializer
         elif self.action == "verify_otp":
-            return UserCreateViewSerializer
-        elif self.action == "change_password":
-            return AuthSerializer
+            return OTPSerializer
+        elif self.action == 'reset_password':
+            return TokenSerializer
 
-    @action(methods=["post"], detail=True, url_name="forgot-password")
-    def forgot_password(self, request, pk=None, *args, **kwargs):
+    @action(methods=["post"], detail=False, url_name="forgot-password")
+    def forgot_password(self, request, *args, **kwargs):
+        """
+        handle forgot password view
+        requires email in post data
+        """
         serializer = self.get_serializer_class()
-        # if not pk and request.user.is_authenticated:
-        #     pk = request.user.id
         try:
-            user = self.user_app_service.get_user_by_id(id=pk)
-            if user:
-                serializer = serializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                response_data = self.user_app_service.forgot_password(user=user)
-                return CustomResponse(data=response_data).success_message()
-            return CustomResponse(message="User Doesn't Exist").error_message()
-        except serializers.ValidationError:
-            return CustomResponse(data=serializer.errors).error_message()
-        except User.DoesNotExist:
-            return CustomResponse(
-                message="Otp will be sent if the user exists!"
-            ).success_message()
+            serializer = serializer(data=request.data)
+            if serializer.is_valid():
+                user = self.user_app_service.get_user_by_email(serializer.data.get("email"))
+                if user:
+                    response_data = self.user_app_service.forgot_password(user=user)
+                    return CustomResponse(data=response_data).success_message()
+                return CustomResponse(
+                        message="Otp will be sent if the user exists!"
+                    ).success_message()
+            return CustomResponse(data=serializer.errors).error_message() 
         except Exception as e:
             return CustomResponse(message=e).error_message()
 
     @action(methods=["post"], detail=True, url_name="verify-otp")
-    def verify_otp(self, request, pk=None, *args, **kwargs):
-        pass
+    def verify_otp(self, request, pk, *args, **kwargs):
+        """verify otp, requires otp in post data"""
+        serializer = self.get_serializer_class()
+        try:
+            user = self.user_app_service.get_active_user_by_id(id=pk)
+            if user:
+                serializer = serializer(data=request.data)
+                if serializer.is_valid():
+                    # run verify otp here
+                    otp = self.user_app_service.verify_otp(serializer.data['otp'], user.id)
+                    if otp:
+                        response_data = {"reset": f"{reverse('pwd-reset-password', kwargs={'pk':user.id})}?token={otp.otp_token}"}
+                        return CustomResponse(data=response_data).success_message()
+                    return CustomResponse(message="OTP doesn't match").error_message()
+                return CustomResponse(data=serializer.errors).error_message()
+            return CustomResponse(message="No User Found!").error_message()
+        except Exception as e:
+            return CustomResponse(message=e).error_message()
 
-    @action(methods=["post"], detail=True, url_name="change-password")
-    def change_password(self, request, pk=None, *args, **kwargs):
-        pass
+    @action(methods=["post"], detail=True, url_name="reset-password")
+    def reset_password(self, request, pk, *args, **kwargs):
+        """
+        reset password
+        id in url
+        token in url get params
+        new_password in post data
+        """
+        serializer = self.get_serializer_class()
+        try:
+            user = self.user_app_service.get_active_user_by_id(id=pk)
+            if user:
+                data = {'user_id': user.id, 'otp_token': request.GET.get('token'), 'new_password':request.data.get('new_password')}
+                serializer = serializer(data=data)
+                if serializer.is_valid():
+                    return CustomResponse("New password successfully set!").success_message()
+                return CustomResponse(data=serializer.errors).error_message()
+            return CustomResponse(message="No User Found!").error_message()
+        except Exception as e:
+            return CustomResponse(message=e).error_message()
 
+class ChangePasswordView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    user_app_service = UserAppService()
+
+    @action(methods=["post"], detail=False, url_name="change-password")
+    def change_password(self, request, *args, **kwargs):
+        """change password view, provide old_password and new_password in the dict"""
+        try:
+            user = self.user_app_service.get_active_user_by_id(id=request.user.id)
+            old_password = request.data.get("old_password")
+            if user and old_password and authenticate(email=user.email, password=old_password):
+                serializer = NewPasswordSerializer(data=request.data)
+                if serializer.is_valid():
+                    self.user_app_service.set_new_password(user_id=user.id, new_password=serializer.data.get("new_password"))
+                    return CustomResponse("New Password successfully set!").success_message()   
+                return CustomResponse(data=serializer.errors).error_message()
+            return CustomResponse(message="No User Found! Please provide correct old_password.").error_message()
+        except Exception as e:
+            return CustomResponse(message=e).error_message()
 
 class CustomTokenRefreshView(TokenViewBase):
     serializer_class = TokenRefreshSerializer
