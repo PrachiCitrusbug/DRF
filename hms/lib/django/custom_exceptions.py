@@ -1,9 +1,8 @@
-from dataclasses import dataclass
 
 from rest_framework.exceptions import APIException
 
 
-@dataclass(frozen=True)
+
 class ObjExistException(Exception):
     """
     Exception that should be raised if model object already exists
@@ -19,6 +18,12 @@ class SerializerException(APIException):
     status_code = 500
     default_detail = 'A server error occurred. We are looking into it!'
     default_code = 'error'
+
+class OTPExpireException(Exception):
+    """
+    Exception that should be raised if OTP has expired
+    """
+    pass
 
 
 # @dataclass(frozen=True)

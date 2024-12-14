@@ -7,6 +7,7 @@ from django.db.models.query import QuerySet
 from django.urls import reverse
 
 from lib.django import custom_models
+from lib.django.custom_exceptions import OTPExpireException
 from hms.domain.user_management.models import User, UserOTP
 from hms.domain.user_management.services import UserService
 
@@ -206,31 +207,17 @@ class UserAppService:
         try:
             user_id = user_obj.id
             base_params = {"username": user_obj.username, "email": user_obj.email}
-            role = user_obj.role
-            # TODO : Update this code to call update_user only one time.
-            if role == custom_models.RoleType.PATIENT or role == custom_models.RoleType.DOCTOR:
-                return self.user_service.update_user(
+            role = user_obj.role if user_obj.role else custom_models.RoleType.PATIENT
+            base_permissions = {"is_staff": True} if role == custom_models.RoleType.STAFF or role == custom_models.RoleType.SUPERUSER else None
+            is_superuser = {"is_superuser": True} if role == custom_models.RoleType.SUPERUSER else None
+            # TODO : Update this code to call update_user only one time. - DONE
+            return self.user_service.update_user(
                     user_id=user_id,
                     base_params=base_params,
-                    role=role
-                )
-            elif role == custom_models.RoleType.STAFF:
-                return self.user_service.update_user(
-                    user_id=user_id,
-                    base_params=base_params,
-                    role=custom_models.RoleType.STAFF,
-                    base_permissions={"is_staff": True},
-                )
-            elif role == custom_models.RoleType.SUPERUSER:
-                return self.user_service.update_user(
-                    user_id=user_id,
-                    base_params=base_params,
-                    role=custom_models.RoleType.SUPERUSER,
-                    base_permissions={"is_staff": True},
-                    is_superuser={"is_superuser": True}
-                )
-            else:
-                raise ValueError("Accepted role values are: patient, doctor, staff, superuser")  
+                    role=role,
+                    base_permissions=base_permissions,
+                    is_superuser=is_superuser
+                )  
         except Exception as e:
             raise Exception(f"At update_user: {e}. user_obj is an instance of User object with updated values.")
     
@@ -282,7 +269,13 @@ class UserAppService:
         try:
             otp_obj = self.user_service.get_otp_by_user_id(user_id=user_id)
             if otp_obj.otp == otp:
-                return otp_obj
+                #check for otp expiration
+                if not otp_obj.is_otp_expired():
+                    return otp_obj
+                raise OTPExpireException("Your OTP has expired")
+        except OTPExpireException:
+            otp_obj.delete
+            raise OTPExpireException
         except Exception as e:
             raise Exception(f"At verify_otp: {e}")
     
@@ -299,6 +292,7 @@ class UserAppService:
         try:
             otp_obj = self.user_service.get_otp_by_user_id(user_id=user_id)
             if otp_obj.otp_token == otp_token:
+                otp_obj.delete()
                 return self.set_new_password(user_id=user_id, new_password=new_password)
             return False
         except Exception as e:

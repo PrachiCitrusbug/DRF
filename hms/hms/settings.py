@@ -14,6 +14,10 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import datetime
+import ast
+import logging
+
+logger = logging.getLogger(__name__)
 
 # load environment variable from .env
 load_dotenv()
@@ -50,6 +54,7 @@ INSTALLED_APPS = [
     "hms.domain.records",
     "django_filters",
     "rest_framework_simplejwt",
+    "drf_spectacular"
 ]
 
 REST_FRAMEWORK = {
@@ -59,20 +64,88 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_RENDERER_CLASSES": [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ], # Response object
+    "DEFAULT_PARSER_CLASSES": [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        # 'rest_framework.parsers.MultiPartParser'
+    ], # request.data 
+    "DEFAULT_SCHEMA_CLASS": 'drf_spectacular.openapi.AutoSchema'
 }
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": datetime.timedelta(
-        hours=int(os.getenv("ACCESS_TOKEN_EXPIRATION"))
+        **ast.literal_eval(os.getenv("ACCESS_TOKEN_EXPIRATION"))
     ),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(
-        days=int(os.getenv("REFRESH_TOKEN_EXPIRATION"))
+       **ast.literal_eval(os.getenv("REFRESH_TOKEN_EXPIRATION"))
     ),
     "SIGNING_KEY": os.getenv("SIGNING_KEY"),
     "AUTH_HEADER_TYPES": ("JWT",),
     "UPDATE_LAST_LOGIN": True,
-    "USER_ID_FIELD": "id",
+    "USER_ID_FIELD": os.getenv("USER_ID_FIELD"),
+    "ROTATE_REFRESH_TOKENS": True
 }
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'HMS API',
+    'DESCRIPTION': 'Hospital Management System',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # OTHER SETTINGS
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "formatters": {
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {message}",
+            "style": "{",
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+        },
+        "django.server": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "django.server",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "mail_admins"],
+            "level": "INFO",
+        },
+        "django.server": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -102,7 +175,7 @@ TEMPLATES = [
     },
 ]
 
-AUTH_USER_MODEL = "user_management.User"
+AUTH_USER_MODEL = os.getenv("AUTH_USER_MODEL")
 WSGI_APPLICATION = "hms.wsgi.application"
 
 
@@ -145,7 +218,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "Asia/Calcutta"
+TIME_ZONE = os.getenv("TIME_ZONE")
 
 USE_I18N = True
 
@@ -156,6 +229,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "static/"
+# STATIC_ROOT = "static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

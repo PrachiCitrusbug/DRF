@@ -1,8 +1,11 @@
+import uuid
+
 from django.contrib.auth.mixins import UserPassesTestMixin
 
 from rest_framework.permissions import BasePermission
 
 from lib.django.custom_models import RoleType
+
 
 
 class UserAuthenticatedTestMixin(UserPassesTestMixin):
@@ -22,9 +25,25 @@ class NotDoctorTestMixin(UserPassesTestMixin):
 
 class IsNotAuthenticated(BasePermission):
     """
-    Custom permission to disallow access for authenticated users.
+    Custom permission to restrict access for authenticated users.
     """
     message = 'Authenticated users are not allowed.'
 
     def has_permission(self, request, view):
         return not request.user.is_authenticated
+    
+class PatientNotAllowed(BasePermission):
+    """Custom permission to restrict patient user access"""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role != RoleType.PATIENT
+    
+class DoctorNotAllowed(BasePermission):
+    """Custom permission to restrict doctor user access"""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role != RoleType.DOCTOR
+    
+class OwnDataAccess(BasePermission):
+    """only allow user to access their own data"""
+    def has_permission(self, request, view):
+        pk = uuid.UUID(view.kwargs.get("pk"))
+        return request.user.id == pk

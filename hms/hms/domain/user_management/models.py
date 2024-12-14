@@ -121,7 +121,8 @@ class UserOTP(models.Model):
     otp_token = models.CharField(max_length=40, null=True)
     
     def is_otp_expired(self):
-        return self.otp_expiration < datetime.datetime.now()
+        tz = get_default_timezone()
+        return self.otp_expiration < datetime.datetime.now(tz=tz)
 
 
 class UserFactory:

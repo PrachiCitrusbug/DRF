@@ -17,13 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from .auth.urls import router as auth_router
 from .auth import urls as auth_urls
 from .user_management.urls import router as user_router
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include(auth_router.urls)),
-    path('', include(auth_urls)),
-    path('', include(user_router.urls)),
+    path('api/', include(auth_urls)),
+    path('api/', include(user_router.urls)),
 ]

@@ -63,7 +63,7 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         try:
-            # TODO : Try this
+            # TODO : Try this - Done
             # instance.username = validated_data.get("username") if validated_data.get("username") else instance.username
             # instance.email = validated_data.get("email") if validated_data.get("email") else instance.email
             # instance.role = validated_data.get("role") if validated_data.get("role") else instance.role

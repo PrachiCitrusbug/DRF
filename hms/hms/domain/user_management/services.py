@@ -129,14 +129,16 @@ class UserService:
         self,
         user_id,
         base_params,
-        role=RoleType.PATIENT,
-        base_permissions={
-            "is_staff": BaseUserPermissions.is_staff,
-            "is_active": BaseUserPermissions.is_active,
-        },
-        is_superuser={"is_superuser": SuperUserPermission.is_superuser},
+        role,
+        base_permissions,
+        is_superuser,
     ):
         """updates `User` object"""
+        base_permissions = base_permissions if base_permissions else {
+            "is_staff": BaseUserPermissions.is_staff,
+            "is_active": BaseUserPermissions.is_active,
+        }
+        is_superuser = is_superuser if is_superuser else {"is_superuser": SuperUserPermission.is_superuser}
         return (
             self.get_user_repo()
             .get(id=user_id)
@@ -163,3 +165,4 @@ class UserService:
             return None
         except Exception as e:
             raise Exception(f"{e} at get_otp_by_user_id")
+        
