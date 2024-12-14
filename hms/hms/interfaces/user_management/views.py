@@ -9,16 +9,34 @@ from hms.interfaces.user_management.serializers import (
     UserCreateViewSerializer,
 )
 from lib.django.custom_response import CustomResponse
+from lib.django.custom_permissions import PatientNotAllowed, DoctorNotAllowed, OwnDataAccess
+from lib.django.custom_models import RoleType
+from hms import settings
 
+logger = settings.logger
 
 class UserViewSet(viewsets.GenericViewSet):
     """viewset to list, create, update, delete and retrieve users"""
 
-    permission_classes = [IsAuthenticated]
     user_app_service = UserAppService()
     filter_backends = [filters.SearchFilter]
     search_fields = ["username", "email"]
     queryset = user_app_service.list_users()
+
+    def get_permissions(self):
+        self.permission_classes = [IsAuthenticated]
+        if self.action == "list" or self.action == "create":
+            self.permission_classes.extend([PatientNotAllowed, DoctorNotAllowed])
+        elif self.action == "retrieve":
+            if self.request.user.role == RoleType.PATIENT:
+                self.permission_classes.extend([OwnDataAccess])
+        elif self.action == "update" or self.action == "partial_update":
+            if not self.request.user.is_staff:
+                self.permission_classes.extend([PatientNotAllowed, DoctorNotAllowed])
+        elif self.action == "delete":
+            if not self.request.user.is_staff:
+                self.permission_classes.extend([OwnDataAccess])
+        return super().get_permissions()
 
     def get_serializer_class(self):
         """get serializer based on action performed"""

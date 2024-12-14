@@ -27,7 +27,7 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
     user_app_service = UserAppService()
     # abcd = serializers.SerializerMethodField()
 
-    password = serializers.CharField(required=False)
+    password = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = get_user_model()
@@ -63,7 +63,7 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         try:
-            # TODO : Try this
+            # TODO : Try this - Done
             # instance.username = validated_data.get("username") if validated_data.get("username") else instance.username
             # instance.email = validated_data.get("email") if validated_data.get("email") else instance.email
             # instance.role = validated_data.get("role") if validated_data.get("role") else instance.role
@@ -74,9 +74,3 @@ class UserCreateViewSerializer(serializers.ModelSerializer):
             raise SerializerException(
                 f"{e} at update() in UserCreateViewSerializer"
             )
-
-
-class UserUpdateViewSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = get_user_model()
-        fields = []

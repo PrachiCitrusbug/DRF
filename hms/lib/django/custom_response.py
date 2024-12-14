@@ -15,7 +15,7 @@ class CustomResponse:
         data=None,
         status=None,
     ):
-        self.message = str(message) if settings.DEBUG else None
+        self.message = str(message)
         self.data = data
         self.status = status
 
@@ -39,6 +39,10 @@ class CustomResponse:
     def error_message(self):
         # print(settings.DEBUG)
         self.status = self.status if self.status else HTTP_400_BAD_REQUEST
+        if isinstance(self.message, Exception):
+            self.message = str(self.message) if settings.DEBUG else None
+        else:
+            self.message = self.message
         self.data = {
             "message": self.message if self.message else "Something went wrong!",
             "data": self.data if self.data else "{}",
