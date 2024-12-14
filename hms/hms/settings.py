@@ -54,98 +54,8 @@ INSTALLED_APPS = [
     "hms.domain.records",
     "django_filters",
     "rest_framework_simplejwt",
-    "drf_spectacular"
+    "drf_spectacular",
 ]
-
-REST_FRAMEWORK = {
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 2,
-    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "DEFAULT_RENDERER_CLASSES": [
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
-    ], # Response object
-    "DEFAULT_PARSER_CLASSES": [
-        'rest_framework.parsers.JSONParser',
-        'rest_framework.parsers.FormParser',
-        # 'rest_framework.parsers.MultiPartParser'
-    ], # request.data 
-    "DEFAULT_SCHEMA_CLASS": 'drf_spectacular.openapi.AutoSchema'
-}
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(
-        **ast.literal_eval(os.getenv("ACCESS_TOKEN_EXPIRATION"))
-    ),
-    "REFRESH_TOKEN_LIFETIME": datetime.timedelta(
-       **ast.literal_eval(os.getenv("REFRESH_TOKEN_EXPIRATION"))
-    ),
-    "SIGNING_KEY": os.getenv("SIGNING_KEY"),
-    "AUTH_HEADER_TYPES": ("JWT",),
-    "UPDATE_LAST_LOGIN": True,
-    "USER_ID_FIELD": os.getenv("USER_ID_FIELD"),
-    "ROTATE_REFRESH_TOKENS": True
-}
-
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'HMS API',
-    'DESCRIPTION': 'Hospital Management System',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    # OTHER SETTINGS
-}
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "require_debug_false": {
-            "()": "django.utils.log.RequireDebugFalse",
-        },
-        "require_debug_true": {
-            "()": "django.utils.log.RequireDebugTrue",
-        },
-    },
-    "formatters": {
-        "django.server": {
-            "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {message}",
-            "style": "{",
-        }
-    },
-    "handlers": {
-        "console": {
-            "level": "INFO",
-            "filters": ["require_debug_true"],
-            "class": "logging.StreamHandler",
-        },
-        "django.server": {
-            "level": "INFO",
-            "class": "logging.StreamHandler",
-            "formatter": "django.server",
-        },
-        "mail_admins": {
-            "level": "ERROR",
-            "filters": ["require_debug_false"],
-            "class": "django.utils.log.AdminEmailHandler",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console", "mail_admins"],
-            "level": "INFO",
-        },
-        "django.server": {
-            "handlers": ["django.server"],
-            "level": "INFO",
-            "propagate": False,
-        },
-    },
-}
-
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -237,3 +147,95 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 OTP_EXPIRATION = int(os.getenv("OTP_EXPIRATION"))
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 2,
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_RENDERER_CLASSES": [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ], # Response object
+    "DEFAULT_PARSER_CLASSES": [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        # 'rest_framework.parsers.MultiPartParser'
+    ], # request.data 
+    "DEFAULT_SCHEMA_CLASS": 'drf_spectacular.openapi.AutoSchema'
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(
+        **ast.literal_eval(os.getenv("ACCESS_TOKEN_EXPIRATION"))
+    ),
+    "REFRESH_TOKEN_LIFETIME": datetime.timedelta(
+       **ast.literal_eval(os.getenv("REFRESH_TOKEN_EXPIRATION"))
+    ),
+    "SIGNING_KEY": os.getenv("SIGNING_KEY"),
+    "AUTH_HEADER_TYPES": ("JWT",),
+    "UPDATE_LAST_LOGIN": True,
+    "USER_ID_FIELD": os.getenv("USER_ID_FIELD"),
+    "ROTATE_REFRESH_TOKENS": True
+}
+
+API_SWAGGER_URL = os.getenv("API_SWAGGER_URL")
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'HMS API',
+    'DESCRIPTION': 'Hospital Management System',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': True,
+    # OTHER SETTINGS
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "formatters": {
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {message}",
+            "style": "{",
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+        },
+        "django.server": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "django.server",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "mail_admins"],
+            "level": "INFO",
+        },
+        "django.server": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

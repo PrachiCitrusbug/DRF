@@ -2,7 +2,6 @@ from rest_framework import viewsets, status, filters
 from rest_framework.permissions import IsAuthenticated
 
 # from rest_framework.decorators import action
-
 from hms.application.user_management.services import UserAppService
 from hms.interfaces.user_management.serializers import (
     UserListViewSerializer,
@@ -12,9 +11,11 @@ from lib.django.custom_response import CustomResponse
 from lib.django.custom_permissions import PatientNotAllowed, DoctorNotAllowed, OwnDataAccess
 from lib.django.custom_models import RoleType
 from hms import settings
+from .open_api import user_view_schema
 
 logger = settings.logger
 
+@user_view_schema
 class UserViewSet(viewsets.GenericViewSet):
     """viewset to list, create, update, delete and retrieve users"""
 
@@ -28,13 +29,13 @@ class UserViewSet(viewsets.GenericViewSet):
         if self.action == "list" or self.action == "create":
             self.permission_classes.extend([PatientNotAllowed, DoctorNotAllowed])
         elif self.action == "retrieve":
-            if self.request.user.role == RoleType.PATIENT:
+            if self.request.user.is_authenticated and self.request.user.role == RoleType.PATIENT:
                 self.permission_classes.extend([OwnDataAccess])
         elif self.action == "update" or self.action == "partial_update":
-            if not self.request.user.is_staff:
+            if self.request.user.is_authenticated and not self.request.user.is_staff:
                 self.permission_classes.extend([PatientNotAllowed, DoctorNotAllowed])
         elif self.action == "delete":
-            if not self.request.user.is_staff:
+            if self.request.user.is_authenticated and not self.request.user.is_staff:
                 self.permission_classes.extend([OwnDataAccess])
         return super().get_permissions()
 

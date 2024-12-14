@@ -88,7 +88,7 @@ class AuthenticateUserView(viewsets.ViewSet):
         except Exception as e:
             return CustomResponse(message=e).error_message()
 
-    @action(methods=["get", "post"], detail=False, url_name="logout")
+    @action(methods=["get"], detail=False, url_name="logout")
     def logout(self, request, *args, **kwargs):
         try:
             if request.user.is_authenticated:
