@@ -11,6 +11,7 @@ from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.conf import settings
 from django.utils.timezone import get_default_timezone
+from django.urls import reverse_lazy
 
 from lib.django import custom_models
 from lib.django.utils import generate_otp
@@ -107,6 +108,12 @@ class User(AbstractUser):
         self.is_superuser = is_superuser
         self.save()
         return self
+    
+    def __str__(self):
+        return self.username
+    
+    def get_absolute_url(self):
+        return reverse_lazy("user-detail", kwargs={"pk": self.pk})
     
     # @admin.display(description="role and is_staff?")
     # def role_staff(self):
