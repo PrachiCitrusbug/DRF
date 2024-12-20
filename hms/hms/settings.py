@@ -100,6 +100,9 @@ DATABASES = {
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST"),
         "PORT": os.getenv("DB_PORT"),
+        "TEST": {
+            "NAME": os.getenv("TEST_DB_NAME")
+        }
     }
 }
 
@@ -151,7 +154,7 @@ OTP_EXPIRATION = int(os.getenv("OTP_EXPIRATION"))
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 2,
+    "PAGE_SIZE": 7,
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -192,6 +195,7 @@ SPECTACULAR_SETTINGS = {
     # OTHER SETTINGS
 }
 
+logger.info("HELLO WORKD")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

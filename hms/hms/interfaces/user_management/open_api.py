@@ -7,17 +7,20 @@ user_view_schema = extend_schema_view(
     list=extend_schema( 
         summary='retrieve-user-list',
         description='This endpoint retrieves all users - only is_staff users are allowed',
+        tags=["user"]
     ),
     retrieve=extend_schema(
         summary='retrieve-user-by-id',
         description='This endpoint retrieves a single user information based on id',
-        responses=UserListViewSerializer
+        responses=UserListViewSerializer,
+        tags=["user"]
     ),
     create=extend_schema(
         summary='create-user',
         description='This endpoint creates a user using payload',
         request=UserCreateViewSerializer,
-        responses=UserCreateViewSerializer
+        responses=UserCreateViewSerializer,
+        tags=["user"]
     ),
     update=extend_schema(
         summary='update-user',
@@ -42,6 +45,7 @@ user_view_schema = extend_schema_view(
                     }
                 },
         responses=UserCreateViewSerializer,
+        tags=["user"]
     ),
     partial_update=extend_schema(
         summary="partial-update-user",
@@ -65,11 +69,13 @@ user_view_schema = extend_schema_view(
                         },
                     }
                 },
-        responses=UserCreateViewSerializer
+        responses=UserCreateViewSerializer,
+        tags=["user"]
     ),
     destroy=extend_schema(
         summary="delete-user",
-        description="This endpoint deletes the requested user"
+        description="This endpoint deletes the requested user",
+        tags=["user"]
     )
 )
 
