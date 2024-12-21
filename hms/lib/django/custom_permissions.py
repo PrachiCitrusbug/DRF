@@ -45,5 +45,6 @@ class DoctorNotAllowed(BasePermission):
 class OwnDataAccess(BasePermission):
     """only allow user to access their own data"""
     def has_permission(self, request, view):
+        # print("VIEW", view.kwargs.get("pk"))
         pk = uuid.UUID(view.kwargs.get("pk"))
         return request.user.id == pk

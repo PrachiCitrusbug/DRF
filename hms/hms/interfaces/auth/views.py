@@ -54,7 +54,6 @@ class AuthenticateUserView(viewsets.ViewSet):
                 email = serializer.data.get("email", None)
                 password = serializer.data.get("password", None)
                 user = authenticate(email=email, password=password)
-                # TODO : Add condition to raise error if user not found. - DONE
                 if user:
                     response_data = self.user_app_service.get_user_token(user)
                     return CustomResponse(

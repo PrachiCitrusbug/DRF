@@ -210,7 +210,6 @@ class UserAppService:
             role = user_obj.role if user_obj.role else custom_models.RoleType.PATIENT
             base_permissions = {"is_staff": True} if role == custom_models.RoleType.STAFF or role == custom_models.RoleType.SUPERUSER else None
             is_superuser = {"is_superuser": True} if role == custom_models.RoleType.SUPERUSER else None
-            # TODO : Update this code to call update_user only one time. - DONE
             return self.user_service.update_user(
                     user_id=user_id,
                     base_params=base_params,

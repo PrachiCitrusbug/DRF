@@ -31,10 +31,10 @@ class UserViewSet(viewsets.GenericViewSet):
         elif self.action == "retrieve":
             if self.request.user.is_authenticated and self.request.user.role == RoleType.PATIENT:
                 self.permission_classes.extend([OwnDataAccess])
-        elif self.action == "update" or self.action == "partial_update":
+        elif self.action == "create" or self.action == "update" or self.action == "partial_update":
             if self.request.user.is_authenticated and not self.request.user.is_staff:
                 self.permission_classes.extend([PatientNotAllowed, DoctorNotAllowed])
-        elif self.action == "delete":
+        elif self.action == "destroy":
             if self.request.user.is_authenticated and not self.request.user.is_staff:
                 self.permission_classes.extend([OwnDataAccess])
         return super().get_permissions()
@@ -74,7 +74,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 message=e, status=status.HTTP_404_NOT_FOUND
             ).error_message()
 
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request, pk):
         """retrieve user information for the given user_id"""
         serializer = self.get_serializer_class()
         try:
@@ -108,7 +108,7 @@ class UserViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return CustomResponse(message=e).error_message()
 
-    def update(self, request, pk=None, *args, **kwargs):
+    def update(self, request, pk, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         serializer = self.get_serializer_class()
         try:
@@ -131,12 +131,15 @@ class UserViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return CustomResponse(message=e).error_message()
 
-    def partial_update(self, request, pk=None, *args, **kwargs):
+    def partial_update(self, request, pk, *args, **kwargs):
         kwargs["partial"] = True
         return self.update(request, pk, *args, **kwargs)
 
-    def destroy(self, request, pk=None):
+    def destroy(self, request, pk, *args, **kwargs):
         """delete user, sets is_active as False"""
+        # print(pk)
+        # print(kwargs.get("pk"))
+        # print(kwargs)
         try:
             instance = self.user_app_service.get_active_user_by_id(pk)
             if instance:

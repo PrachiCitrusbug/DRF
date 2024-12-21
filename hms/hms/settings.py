@@ -154,7 +154,7 @@ OTP_EXPIRATION = int(os.getenv("OTP_EXPIRATION"))
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 7,
+    "PAGE_SIZE": int(os.getenv("PAGE_SIZE")),
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -166,7 +166,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
-        # 'rest_framework.parsers.MultiPartParser'
+        'rest_framework.parsers.MultiPartParser'
     ], # request.data 
     "DEFAULT_SCHEMA_CLASS": 'drf_spectacular.openapi.AutoSchema'
 }

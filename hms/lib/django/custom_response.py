@@ -11,12 +11,13 @@ class CustomResponse:
 
     def __init__(
         self,
-        message=None,
-        data=None,
-        status=None,
+        message:str|None = None,
+        data:dict|None = None,
+        status:int|None = None,
     ):
         self.message = str(message)
         self.data = data
+        print(status)
         self.status = status
 
     @property
